@@ -1,2 +1,1 @@
-# NajafiLabPHD
-Projects during Ph.D. training in joint Georgia Tech/Emory BME program working in the Najafi lab.
+上了个鬼学读了个鬼书科了个鬼研博了个鬼士恭你妈了个大喜喵
