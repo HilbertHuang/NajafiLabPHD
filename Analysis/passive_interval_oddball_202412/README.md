@@ -1,5 +1,19 @@
 # Intrinsic timing, not temporal prediction, underlies ramping dynamics in visual and parietal cortex during passive behavior
 
+## Overall workflow
+
+This project analyzes passive interval oddball imaging sessions from raw session outputs to a webpage report. Session groups are defined in `session_configs.py`, then `main.py` selects the requested subject/config list, creates a temporary results folder, reads each session's Suite2p `ops.npy`, and runs the enabled analysis blocks.
+
+The first processing layer is trialization. `modules/Trialization.py` combines `dff.h5`, `raw_voltages.h5`, Bpod `bpod_session_data.mat`, and optional camera/DLC pupil traces. It detects visual stimulus and imaging/camera trigger edges, corrects imaging frame times to the center of acquisition, builds `stim_labels` with stimulus timing and trial-type labels, and saves the aligned per-session data into `neural_trials.h5`.
+
+The shared IO layer is `modules/ReadResults.py`. It reads Suite2p ops, raw voltages, masks, motion offsets, trialized neural traces, Bpod labels, and pupil data, with dtype control for lower memory use. `read_all` and `read_subject` collect the saved results across sessions and apply optional forced cell labels.
+
+The alignment layer is `modules/Alignment.py`. `get_stim_response` extracts stimulus-centered neural, stimulus, pupil, and interval windows from each `neural_trials.h5`; `run_get_stim_response` applies this across sessions and returns the common response dictionary used by the figure code.
+
+The figure layer is split by session type: `visualization1_FieldOfView.py`, `visualization2_3331Random.py`, `visualization3_1451ShortLong.py`, `visualization4_4131FixJitterOdd.py`, and `visualization5_3331RandomExtended.py`. Each visualization filters the session config to its target paradigm, loads saved results through `ReadResults`, uses plotter classes in `plot/` plus modeling helpers in `modeling/`, saves SVG figures into `results/temp_<subject_name>`, and returns figure metadata.
+
+Finally, `webpage/pack_webpage_main.py` embeds the generated SVGs and notes into `results/<output_filename>.html`, with pages for field of view and each passive paradigm. In practice, the active blocks are controlled inside `main.run`; commented visualization calls are skipped, while enabled ones generate figures and are included in the report.
+
 ## Update note
 
 ### 2025.01.13
