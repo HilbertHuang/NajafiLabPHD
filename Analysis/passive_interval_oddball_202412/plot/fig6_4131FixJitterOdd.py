@@ -1458,9 +1458,9 @@ class plotter_utils(utils_basic):
             m_1, s_1 = get_mean_sem(corr_jitter, method_s='confidence interval')
             # define evaluation windows.
             if oddball == 0:
-                win_eval = [stim_seq[c_idx+1,0], stim_seq[c_idx+1,1]+500]
+                win_eval = [stim_seq[c_idx+1,0], stim_seq[c_idx+1,0]+500]
             if oddball == 1:
-                win_eval = [stim_seq[c_idx,1]+self.expect, stim_seq[c_idx+1,1]+500]
+                win_eval = [stim_seq[c_idx,1]+self.expect, stim_seq[c_idx,1]+self.expect+500]
             l_idx, r_idx = get_frame_idx_from_time(self.alignment['neu_time'], 0, win_eval[0], win_eval[1])
             # find bounds.
             upper = np.nanmax([m_0, m_1])
