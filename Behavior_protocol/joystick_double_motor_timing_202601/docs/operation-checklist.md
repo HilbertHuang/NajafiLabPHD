@@ -10,20 +10,22 @@ Use this checklist before and during a session.
 4. Confirm the Maestro is connected.
 5. Confirm the rotary encoder is connected.
 6. Confirm the display is connected.
-7. Confirm the water line is ready.
-8. Confirm Doric opto hardware is ready if opto is enabled.
+7. Confirm the HiFi module or current system speaker is available if using audio cues.
+8. Confirm the water line is ready.
+9. Confirm Doric opto hardware is ready if opto is enabled.
 
 ## Start The Protocol
 
 1. Run `joystick_double_motor_timing_202601`.
-2. Edit GUI parameters.
-3. Move the GUI if needed.
-4. Press Enter in MATLAB.
-5. Read the Doric opto settings printed in MATLAB.
-6. Match Doric frequency and pulse on time.
-7. Press Enter to confirm.
-8. Wait for the gray screen.
-9. Press Enter again to start trials.
+2. Confirm the Bpod console status LED turns off.
+3. Edit GUI parameters.
+4. Move the GUI if needed.
+5. Press Enter in MATLAB.
+6. Read the Doric opto settings printed in MATLAB.
+7. Match Doric frequency and pulse on time.
+8. Press Enter to confirm.
+9. Wait for the mode-appropriate ready screen.
+10. Press Enter again to start trials.
 
 ## During The Session
 
@@ -81,15 +83,19 @@ Check rig mapping.
 
 Check `ServoInPos` and `ServoOutPos`.
 
-### No visual cue appears
+### No sensory cue appears
 
 Check monitor selection.
 
 Check PsychToolbox display.
 
-Check `UseGeneratedGrating`.
+Check `SensoryCueMode`.
 
-Check `image.png` if using the image cue.
+For visual cues, check `UseGeneratedGrating`.
+
+For image-based visual cues, check `image.png`.
+
+For audio cues, check the HiFi module or current system speaker and `AudioStimVolume`. `AudioAttenuation_dB` applies only to HiFi.
 
 ### Opto timing looks wrong
 

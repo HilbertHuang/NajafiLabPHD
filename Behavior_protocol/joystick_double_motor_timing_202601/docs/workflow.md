@@ -83,11 +83,14 @@ This decides display monitor selection and hardware assumptions.
 
 ## 7. Open Hardware
 
-The protocol opens:
+The protocol first turns off the Bpod console status LED, then opens:
 
 - Pololu Maestro servo controller.
 - Rotary encoder module.
+- HiFi module or the current system speaker for auditory cues.
 - PsychToolbox video player.
+
+The status LED remains off while the protocol runs.
 
 The protocol releases stale serial objects before opening new ones.
 
@@ -99,18 +102,22 @@ The protocol sets the soft-code handler:
 BpodSystem.SoftCodeHandlerFunction = 'SoftCodeHandler_Protocol'
 ```
 
-## 8. Build Visual Cue
+## 8. Build Sensory Cue
 
-The protocol calls `GenerateVisualCueVideo`.
+The protocol calls `GenerateSensoryCueVideo` for the visual cue component and preloads a ramped sine tone into HiFi when available, otherwise into a persistent PsychPortAudio buffer for the current system speaker.
 
-It either:
+The visual component either:
 
 - Loads and resizes `image.png`.
 - Or creates a generated grating.
 
+Audio-only mode uses two display states: black with the sync patch dark, and black with the sync patch light. The light-patch state is shown while waiting for the session-start Enter. After Enter, the dark-patch state is used between cues and the light-patch state is used during cue playback. A mode change in the GUI is applied when the incoming trial is prepared.
+
+The protocol tries HiFi first, then the current system speaker. Cue playback is triggered immediately after the blocking display flip that changes the sync patch from dark to light. If neither is available, it prints a reminder and continues without auditory cue output.
+
 The cue duration is snapped to a whole number of display frames.
 
-The actual duration replaces `VisualCueDuration_s`.
+The actual duration replaces `SensoryCueDuration_s`.
 
 ## 9. Prepare Hardware
 
@@ -148,7 +155,7 @@ Each trial does these steps:
 4. Regenerate ITI values if ITI settings changed.
 5. Regenerate probe tags if probe settings changed.
 6. Regenerate opto tags if opto settings or probe exclusions changed.
-7. Reload cue video if cue duration or cue source changed.
+7. Reload sensory cue media if cue duration, cue mode, cue source, or audio settings changed.
 8. Choose short or long delay.
 9. Choose ITI and punish ITI.
 10. Apply probe settings.
@@ -176,7 +183,7 @@ Each trial does these steps:
 At the end, the protocol:
 
 - Moves the servo home.
-- Stops the visual display.
+- Stops the sensory cue media and visual display.
 - Prints a session summary.
 - Runs cleanup.
 
