@@ -29,12 +29,16 @@ This is a compact Bpod MATLAB protocol for a joystick timing task with configura
 - Added reward impulse.
 - Changed default parameters.
 
+### 2026.08.12
+- Show the Psychtoolbox gray screen with the sync patch dark while waiting for the session-start Enter.
+- Document that Alt+Tab may be needed to switch from the Psychtoolbox window back to the first MATLAB window when the prompt is issued.
+
 ## Main Workflow
 
 1. Run `joystick_double_motor_timing_202601`.
 2. The Bpod console status LED turns off, then the GUI opens. Set parameters and press Enter in MATLAB.
 3. Hardware is configured: Pololu Maestro servo, rotary encoder, HiFi or system-speaker audio, and PsychToolbox video display.
-4. The servo returns home and the mode-appropriate ready screen is shown. Press Enter again to start trials.
+4. The servo returns home and the Psychtoolbox window becomes gray with the sync patch dark. When the ready prompt is issued, use Alt+Tab to switch back to the first MATLAB window if Psychtoolbox has focus, then press Enter to start trials.
 5. Each trial syncs GUI parameters, builds the next state machine, runs Bpod, saves trial data, and updates the plot canvas.
 
 ## Trial Logic
@@ -64,13 +68,13 @@ Reward amount is computed in `SoftCodeHandler_Protocol` from the press 2 time:
 - maximum through `RewardMaximumWindow_s`
 - linearly decreases to zero over `RewardWindowRight_s`
 
-The resulting amount is converted to calibrated valve-on time for valve 2. That
-on-time is distributed as equal impulses across `TotalRewardDuration_s`. The
-duty cycle is `valve time / total reward duration`, and equal-length cycles
-space the impulses uniformly. The cycle count is approximately total duration
-divided by valve time, capped so valve-on impulses remain at least 1 ms. If the
-configured duration is no longer than the valve time, delivery is one continuous
-impulse lasting the valve time.
+The resulting amount is converted to calibrated valve-on time for valve 2. The
+protocol divides `TotalRewardDuration_s` into exactly 10 hard-coded, identical
+square-wave cycles. Each cycle contains a valve-on period of `valve time / 10`
+followed by a valve-off period of `(total reward duration - valve time) / 10`.
+Thus the duty cycle is `valve time / total reward duration`, the full calibrated
+valve-on time is preserved, and the impulses are uniformly distributed. The
+configured duration must be longer than the calibrated valve time.
 
 ## GUI Parameters
 
@@ -102,7 +106,7 @@ impulse lasting the valve time.
 
 The protocol tries HiFi first, then the current system speaker through a pre-opened PsychPortAudio stream. Audio is buffered before each trial and triggered immediately after the display flip that turns the sync patch light. If neither output is available, the protocol prints a reminder and continues without auditory cue output.
 
-In audio-only mode, the ready screen before the session-start Enter is black with the sync patch light. After the session starts, the idle screen is completely black with the patch dark; cue playback uses the preloaded black frame with the patch light. Changing `SensoryCueMode` during a session updates these display states before the incoming trial.
+During trials, audio-only idle periods are completely black with the patch dark, while cue playback uses the preloaded black frame with the patch light. Changing `SensoryCueMode` during a session updates the trial display states before the incoming trial. Duplicate soft-code requests for a visual state that is already displayed are ignored.
 
 ### Timing
 
@@ -130,7 +134,7 @@ In audio-only mode, the ready screen before the session-start Enter is black wit
 - `RewardWindowRight_s`: late side of rewarded timing window.
 - `PreRewardDelay_s`: delay from rewarded classification to water delivery.
 - `PostRewardDelay_s`: delay after reward before final rewarded state.
-- `TotalRewardDuration_s`: window over which calibrated valve-on time is evenly distributed as a square-wave pulse train.
+- `TotalRewardDuration_s`: window containing 10 identical reward cycles; defaults to 2 seconds.
 - `RewardMode`: same reward for all trials or separate short/long reward sizes.
 - `RewardAmount_uL`: reward size when using same reward mode.
 - `ShortRewardAmount_uL`: short-trial reward size in different reward mode.

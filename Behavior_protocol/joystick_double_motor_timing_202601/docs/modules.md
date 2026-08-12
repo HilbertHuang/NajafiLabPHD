@@ -78,7 +78,7 @@ It either:
 
 The frame is resized to the display viewport.
 
-The cue duration is rounded to a whole number of display frames. Audio-only mode preloads separate all-black video textures for the dark-patch and light-patch states, avoiding the video player's gray default blank texture. The light-patch frame is shown before the session-start Enter and during cue playback.
+The cue duration is rounded to a whole number of display frames. Audio-only mode preloads separate all-black video textures for the dark-patch and light-patch trial states, avoiding the video player's gray default blank texture.
 
 ## `BuildStateMachine.m`
 
@@ -127,7 +127,7 @@ It controls:
 - Outcome soft-code return.
 
 Dynamic reward is computed here. Its calibrated valve-on time is preserved while
-equal impulses are distributed across `TotalRewardDuration_s`.
+10 identical on/off cycles are distributed across `TotalRewardDuration_s`.
 
 ## `OptoControl.m`
 

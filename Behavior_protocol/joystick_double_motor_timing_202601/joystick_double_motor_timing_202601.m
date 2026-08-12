@@ -1,3 +1,4 @@
+
 function joystick_double_motor_timing_202601
 global BpodSystem
 global S
@@ -101,31 +102,22 @@ itiValues = [];
 punishITIValues = [];
 currentTrial = 1;
 
-% Put hardware in a quiet ready state before the second Enter.
+% Put hardware home before the session-start prompt.
 SoftCodeHandler_Protocol(9);
 pause(1);
-if S.GUI.SensoryCueMode == 2
-    BpodSystem.PluginObjects.V.play(1);
-else
-    SoftCodeHandler_Protocol(3);
+try
+    % Explicitly flip the player's gray calibration frame with patch off.
+    BpodSystem.PluginObjects.V.setSyncPatch(0);
+catch exception
+    error('Could not present the gray session-ready screen: %s', exception.message)
 end
-pause(0.2);
-if S.GUI.SensoryCueMode == 2
-    disp('Screen is black with the sync patch light. Press Enter to start the session.')
-else
-    disp('Screen is gray and hardware is ready. Press Enter to start the session.')
-end
+disp('Gray screen is ready. Press Enter to start the session.')
 KbName('UnifyKeyNames');
 enterKey = KbName('Return');
 while KbCheck
     pause(0.02)
 end
 while true
-    if S.GUI.SensoryCueMode == 2
-        BpodSystem.PluginObjects.V.play(1);
-    else
-        BpodSystem.PluginObjects.V.play(0);
-    end
     [keyDown, ~, keyCode] = KbCheck;
     if keyDown && keyCode(enterKey)
         break
@@ -824,8 +816,8 @@ end
 if S.GUI.SensoryCueMode ~= 2 && ~S.GUI.UseGeneratedGrating && ~isfile(fullfile(fileparts(mfilename('fullpath')), 'image.png'))
     error('UseGeneratedGrating is off, but image.png was not found in the protocol folder.')
 end
-if S.GUI.PressThreshold <= S.GUI.RetractThreshold
-    error('PressThreshold must be greater than RetractThreshold.')
+if S.GUI.PressThreshold <= 0 || S.GUI.PressThreshold <= S.GUI.RetractThreshold
+    error('PressThreshold must be positive and greater than RetractThreshold.')
 end
 if S.GUI.BlockLength < 1 || S.GUI.BlockLengthEdge < 0 || S.GUI.ServoReturnTimeout_s <= 0
     error('BlockLength and servo timeout must be positive; BlockLengthEdge cannot be negative.')
@@ -943,8 +935,8 @@ rewardModeNames = {'Same reward', 'Different reward'};
 itiModeNames = {'Manual', 'Exponential'};
 
 fprintf('%s\n', repmat('=', 1, 58));
-fprintf(char(datetime('today', 'Format', 'yyyyMMdd')));
-fprintf('%-28s %d / %d\n', 'Total trials completed:', completedTrials, round(S.GUI.MaxTrials));
+fprintf('%s\n', char(datetime('today', 'Format', 'yyyyMMdd')));
+fprintf('%-28s %d\n', 'Total trials:', completedTrials);
 fprintf('%-28s %s\n', 'Press mode:', pressModeNames{S.GUI.PressMode});
 fprintf('%-28s %s\n', 'Timing mode:', timingNames{S.GUI.TimingMode});
 fprintf('%-28s %s\n', 'Sensory cue mode:', cueModeNames{S.GUI.SensoryCueMode});
@@ -952,9 +944,8 @@ fprintf('%-28s %.3f / %.3f s\n', 'Short / long delay:', S.GUI.ShortDelay_s, S.GU
 fprintf('%-28s %.3f s\n', 'Press 1 window:', S.GUI.Press1Window_s);
 fprintf('%-28s %.3f / %.3f s\n', 'Press 2 window:', S.GUI.ShortPress2Window_s, S.GUI.LongPress2Window_s);
 fprintf('%-28s %.3f / %.3f / %.3f s\n', 'Reward L / Max / R:', S.GUI.RewardWindowLeft_s, S.GUI.RewardMaximumWindow_s, S.GUI.RewardWindowRight_s);
-fprintf('%-28s %.3f / %.3f s\n', 'Pre reward / post delay:', S.GUI.PreRewardDelay_s, S.GUI.PostRewardDelay_s);
+fprintf('%-28s %.3f / %.3f s\n', 'Pre / post reward delay:', S.GUI.PreRewardDelay_s, S.GUI.PostRewardDelay_s);
 fprintf('%-28s %.3f s\n', 'Total reward duration:', S.GUI.TotalRewardDuration_s);
-fprintf('%-28s %s\n', 'Reward mode:', rewardModeNames{S.GUI.RewardMode});
 fprintf('%-28s %.3f / %.3f / %.3f uL\n', 'Reward amounts:', S.GUI.RewardAmount_uL, S.GUI.ShortRewardAmount_uL, S.GUI.LongRewardAmount_uL);
 fprintf('%-28s %.3f / %.3f / %.3f s\n', 'ITI min / mean / max:', S.GUI.ITIMin_s, S.GUI.ITIMean_s, S.GUI.ITIMax_s);
 fprintf('%-28s %.3f / %.3f / %.3f s\n', 'Punish min / mean / max:', S.GUI.PunishITIMin_s, S.GUI.PunishITIMean_s, S.GUI.PunishITIMax_s);
