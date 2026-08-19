@@ -118,7 +118,7 @@ This handles soft codes from the state machine.
 It controls:
 
 - Sensory cues.
-- Gray screen.
+- Inter-trial and session-ready screen states.
 - Servo movement.
 - Press 2 timing.
 - Reward calculation.
@@ -126,8 +126,10 @@ It controls:
 - Square-wave reward scheduling across the configured total duration.
 - Outcome soft-code return.
 
-Dynamic reward is computed here. Its calibrated valve-on time is preserved while
-10 identical on/off cycles are distributed across `TotalRewardDuration_s`.
+Dynamic reward is computed here. The requested water is divided equally among
+10 cycles, each per-cycle amount is calibrated to valve-on time, and the
+resulting duty cycle drives 10 impulses across `TotalRewardDuration_s`. Duty
+cycle is capped at 100% to enforce the maximum deliverable amount.
 
 ## `OptoControl.m`
 

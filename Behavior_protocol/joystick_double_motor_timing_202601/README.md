@@ -22,7 +22,7 @@ This is a compact Bpod MATLAB protocol for a joystick timing task with configura
 ### 2026.07.27
 - Turn off the Bpod console status LED when the protocol starts.
 - Prefer HiFi audio and fall back to the current system speaker.
-- Preload synchronized audio and dedicated audio-only black display frames.
+- Preload synchronized audio and a dedicated gray idle display frame.
 - Modularize audio and idle-display handling.
 
 ### 2026.08.06
@@ -30,15 +30,17 @@ This is a compact Bpod MATLAB protocol for a joystick timing task with configura
 - Changed default parameters.
 
 ### 2026.08.12
-- Show the Psychtoolbox gray screen with the sync patch dark while waiting for the session-start Enter.
-- Document that Alt+Tab may be needed to switch from the Psychtoolbox window back to the first MATLAB window when the prompt is issued.
+- Apply the normal inter-trial idle-screen configuration while waiting for the session-start Enter, matching the screen setup immediately before the first real trial.
+
+### 2026.08.14
+- Route the pre-session idle screen through `SoftCodeHandler_Protocol(3)`, matching the pre-trial setup and keeping the configured display visible when another window is clicked.
 
 ## Main Workflow
 
 1. Run `joystick_double_motor_timing_202601`.
 2. The Bpod console status LED turns off, then the GUI opens. Set parameters and press Enter in MATLAB.
 3. Hardware is configured: Pololu Maestro servo, rotary encoder, HiFi or system-speaker audio, and PsychToolbox video display.
-4. The servo returns home and the Psychtoolbox window becomes gray with the sync patch dark. When the ready prompt is issued, use Alt+Tab to switch back to the first MATLAB window if Psychtoolbox has focus, then press Enter to start trials.
+4. The servo returns home and `SoftCodeHandler_Protocol(3)` applies the normal inter-trial idle screen. Press Enter at the ready prompt to start trials.
 5. Each trial syncs GUI parameters, builds the next state machine, runs Bpod, saves trial data, and updates the plot canvas.
 
 ## Trial Logic
@@ -68,13 +70,13 @@ Reward amount is computed in `SoftCodeHandler_Protocol` from the press 2 time:
 - maximum through `RewardMaximumWindow_s`
 - linearly decreases to zero over `RewardWindowRight_s`
 
-The resulting amount is converted to calibrated valve-on time for valve 2. The
-protocol divides `TotalRewardDuration_s` into exactly 10 hard-coded, identical
-square-wave cycles. Each cycle contains a valve-on period of `valve time / 10`
-followed by a valve-off period of `(total reward duration - valve time) / 10`.
-Thus the duty cycle is `valve time / total reward duration`, the full calibrated
-valve-on time is preserved, and the impulses are uniformly distributed. The
-configured duration must be longer than the calibrated valve time.
+The protocol divides `TotalRewardDuration_s` into exactly 10 hard-coded,
+identical square-wave cycles and assigns one tenth of the requested water to
+each cycle. It converts that per-cycle amount to calibrated valve-on time for
+valve 2, divides the valve time by the cycle duration to obtain the duty cycle,
+and emits 10 uniformly distributed impulses. Duty cycle is capped at 100%, so
+requests above the amount deliverable by 10 fully-on cycles are truncated to
+that maximum.
 
 ## GUI Parameters
 
@@ -106,7 +108,7 @@ configured duration must be longer than the calibrated valve time.
 
 The protocol tries HiFi first, then the current system speaker through a pre-opened PsychPortAudio stream. Audio is buffered before each trial and triggered immediately after the display flip that turns the sync patch light. If neither output is available, the protocol prints a reminder and continues without auditory cue output.
 
-During trials, audio-only idle periods are completely black with the patch dark, while cue playback uses the preloaded black frame with the patch light. Changing `SensoryCueMode` during a session updates the trial display states before the incoming trial. Duplicate soft-code requests for a visual state that is already displayed are ignored.
+During trials, the display stays gray with the patch dark except while a cue frame is shown. Static cue and idle textures use a non-waiting Psychtoolbox flip so a stalled vertical-blank synchronization cannot block Bpod in `SensoryCue1`. Changing `SensoryCueMode` during a session updates the trial display states before the incoming trial. Duplicate soft-code requests for a visual state that is already displayed are ignored.
 
 ### Timing
 
@@ -123,6 +125,7 @@ During trials, audio-only idle periods are completely black with the patch dark,
 - `ServoInPos`: servo home position.
 - `ServoOutPos`: servo released position.
 - `ServoMoveDelay_s`: wait after detected press before retract routing.
+- `LeverRetract1Duration_s`: fixed wait after starting the first lever retraction (default 0.1 s).
 - `ServoReturnTimeout_s`: maximum wait for servo return soft-code confirmation.
 - `AssistMode`: enables assist trials after early press 2.
 - `AssistFraction`: probability of assist after an eligible early trial.
@@ -134,7 +137,7 @@ During trials, audio-only idle periods are completely black with the patch dark,
 - `RewardWindowRight_s`: late side of rewarded timing window.
 - `PreRewardDelay_s`: delay from rewarded classification to water delivery.
 - `PostRewardDelay_s`: delay after reward before final rewarded state.
-- `TotalRewardDuration_s`: window containing 10 identical reward cycles; defaults to 2 seconds.
+- `TotalRewardDuration_s`: window containing 10 identical reward cycles; defaults to 3 seconds.
 - `RewardMode`: same reward for all trials or separate short/long reward sizes.
 - `RewardAmount_uL`: reward size when using same reward mode.
 - `ShortRewardAmount_uL`: short-trial reward size in different reward mode.

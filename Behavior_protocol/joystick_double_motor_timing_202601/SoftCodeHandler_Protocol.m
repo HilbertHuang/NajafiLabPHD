@@ -63,12 +63,12 @@ end
 
 
     function showIdleScreen
-        % Audio-only uses its dedicated black/dark-patch frame, never gray.
+        % Use the preloaded gray/dark-patch frame between cues.
         stopAudio;
-        if audioOnlyIdleAvailable()
-            presentVideo(audioOnlyIdleSlot());
+        if idleVideoAvailable()
+            presentVideo(idleVideoSlot());
         else
-            stopVideo;
+            presentGrayScreen;
         end
     end
 
@@ -92,13 +92,9 @@ end
             (hifiAvailable() || soundCardAvailable());
     end
 
-    function yes = audioOnlyIdleAvailable
-        yes = isAudioOnly() && numel(BpodSystem.PluginObjects.V.Videos) >= audioOnlyIdleSlot() && ...
-            ~isempty(BpodSystem.PluginObjects.V.Videos{audioOnlyIdleSlot()});
-    end
-
-    function yes = isAudioOnly
-        yes = isfield(S.GUI, 'SensoryCueMode') && S.GUI.SensoryCueMode == 2;
+    function yes = idleVideoAvailable
+        yes = numel(BpodSystem.PluginObjects.V.Videos) >= idleVideoSlot() && ...
+            ~isempty(BpodSystem.PluginObjects.V.Videos{idleVideoSlot()});
     end
 
     function yes = hifiAvailable
@@ -109,34 +105,32 @@ end
         yes = isfield(BpodSystem.PluginObjects, 'Sound') && ~isempty(BpodSystem.PluginObjects.Sound);
     end
 
-    function slot = audioOnlyIdleSlot
+    function slot = idleVideoSlot
         slot = 3;
     end
 
-    function stopVideo
+    function presentGrayScreen
         synchronizeVideoState;
         if isequal(displayedVideoState, 0)
             return
         end
-        try
-            BpodSystem.PluginObjects.V.stop;
-            displayedVideoState = 0;
-        catch exception
-            displayedVideoState = NaN;
-            if ~contains(exception.message, 'not running')
-                rethrow(exception)
-            end
-        end
+        player = BpodSystem.PluginObjects.V;
+        Screen('FillRect', player.Window, 128);
+        Screen('Flip', player.Window, 0, 0, 2);
+        displayedVideoState = 0;
     end
 
     function presentVideo(index)
-        % Avoid synchronous Screen flips when the requested frame is
-        % already visible (for example, overlapping timer/state soft codes).
+        % These slots contain one static texture. Draw it directly and use
+        % dontsync=2 so a lost/stalled vertical blank cannot block Bpod's
+        % state-machine event loop in SensoryCue1.
         synchronizeVideoState;
         if isequal(displayedVideoState, index)
             return
         end
-        BpodSystem.PluginObjects.V.play(index);
+        player = BpodSystem.PluginObjects.V;
+        Screen('DrawTexture', player.Window, player.Videos{index}.Data(1));
+        Screen('Flip', player.Window, 0, 0, 2);
         displayedVideoState = index;
     end
 
@@ -195,22 +189,21 @@ end
     end
 
     function deliverDynamicReward
-        % Spread calibrated valve-on time evenly across the reward window.
+        % Deliver one tenth of the requested water in each reward cycle.
         amount = ProtocolTrialContext.RewardAmount_uL;
         if amount <= 0
             return
         end
-        valveTime = GetValveTimes(amount, 2);
         totalDuration = ProtocolTrialContext.TotalRewardDuration_s;
-        if valveTime >= totalDuration
-            error('TotalRewardDuration_s must be longer than the calibrated valve time (%.6f s).', valveTime)
-        end
-
-        % Divide the window into exactly 10 identical on/off cycles while
-        % preserving the calibrated total valve-on time.
         cycleCount = 10;
         cycleDuration = totalDuration / cycleCount;
-        pulseDuration = valveTime / cycleCount;
+
+        % Calibrate the water assigned to one cycle, convert its valve time
+        % to a per-cycle duty cycle, and cap delivery at 100% duty cycle.
+        amountPerCycle = amount / cycleCount;
+        valveTimePerCycle = GetValveTimes(amountPerCycle, 2);
+        dutyCycle = min(1, max(0, valveTimePerCycle / cycleDuration));
+        pulseDuration = dutyCycle * cycleDuration;
         offDuration = cycleDuration - pulseDuration;
 
         for cycle = 1:cycleCount
