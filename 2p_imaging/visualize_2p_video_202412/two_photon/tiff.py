@@ -18,12 +18,18 @@ def _natural_key(path: Path) -> list[str | int]:
 
 def find_ch2(folder: Path) -> list[Path]:
     """Find and naturally sort Ch2 TIFF files below a directory."""
-    files = sorted(
-        (p for p in folder.rglob("*") if p.is_file() and "ch2" in p.name.lower()
-         and p.suffix.lower() in {".tif", ".tiff"}), key=_natural_key
-    )
+    files = [path for path in find_tiffs(folder) if "ch2" in path.name.lower()]
     if not files:
         raise FileNotFoundError(f"No Ch2 TIFF files found below {folder}")
+    return files
+
+
+def find_tiffs(folder: Path) -> list[Path]:
+    """Find TIFF files while ignoring unrelated files in the same folder."""
+    files = sorted((p for p in folder.rglob("*") if p.is_file()
+                    and p.suffix.lower() in {".tif", ".tiff"}), key=_natural_key)
+    if not files:
+        raise FileNotFoundError(f"No TIFF files found below {folder}")
     return files
 
 

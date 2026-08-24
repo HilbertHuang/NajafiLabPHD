@@ -6,6 +6,8 @@ from pathlib import Path
 from .tiff import find_ch2
 from .video import process
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 def _arguments() -> argparse.Namespace:
     """Parse and validate command-line arguments."""
@@ -18,6 +20,14 @@ def _arguments() -> argparse.Namespace:
                         help="number of frames in the rolling average (default: 1)")
     parser.add_argument("--speed", type=float, default=1,
                         help="playback speed, e.g. 0.5 or 2 (default: 1)")
+    parser.add_argument("--gpu", default="all",
+                        help="CUDA devices, e.g. 0,1, or all (default: all)")
+    parser.add_argument("--srdtrans-root", type=Path, default=ROOT / "SRDTrans",
+                        help="path to the unchanged SRDTrans repository")
+    parser.add_argument("--model", type=Path, default=ROOT / "SRDTrans" / "pth",
+                        help="folder containing SRDTrans .pth checkpoints")
+    parser.add_argument("--patch", type=int, default=128,
+                        help="SRDTrans spatial and temporal patch size (default: 128)")
     args = parser.parse_args()
     if args.duration <= 0:
         parser.error("--duration must be positive")
@@ -25,6 +35,8 @@ def _arguments() -> argparse.Namespace:
         parser.error("--speed must be positive")
     if args.rolling_average < 1:
         parser.error("--rolling-average must be at least 1")
+    if args.patch < 8 or args.patch % 8:
+        parser.error("--patch must be at least 8 and divisible by 8")
     if not args.data.is_dir():
         parser.error(f"data directory does not exist: {args.data}")
     return args
@@ -34,6 +46,7 @@ def main() -> None:
     """Run the command-line conversion."""
     args = _arguments()
     video, fps, frames = process(
-        find_ch2(args.data), args.duration, args.output, args.rolling_average, args.speed)
+        find_ch2(args.data), args.duration, args.output, args.rolling_average, args.speed,
+        args.gpu, args.patch, args.srdtrans_root, args.model)
     print(f"Processed {frames} source frames at {fps:.4f} fps; video is 60 fps at {args.speed:g}x"
           f"\nVideo: {video}")

@@ -11,6 +11,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 from tqdm import tqdm
 
+from .srdtrans import denoised_stack
 from .tiff import frame_counts, frame_rate, pages
 
 
@@ -32,24 +33,10 @@ def _contrast(files: list[Path], count: int) -> tuple[float, float]:
     return float(low), float(max(high, low + 1))
 
 
-def process(files: list[Path], duration: float, output: Path, rolling: int,
-            speed: float) -> tuple[Path, float, int]:
-    """Read, denoise, resample, and encode the selected recording interval."""
-    print(f"Found {len(files)} Ch2 TIFF file(s).")
-    print("Reading acquisition timing and stack sizes...")
-    fps = frame_rate(files)
-    available = sum(frame_counts(files))
-    # Cover the duration without exceeding the available recording.
-    count = min(math.ceil(duration * fps), available)
-    if count < 1:
-        raise ValueError("The input contains no frames")
-
-    output.mkdir(parents=True, exist_ok=True)
+def _render(files: list[Path], count: int, fps: float, output: Path,
+            rolling: int, speed: float) -> Path:
+    """Render an already denoised stack as a green 60 fps video."""
     mp4_path = output / "fov_ch2.mp4"
-    print(f"Source: {fps:.4f} fps, {available} available frames.")
-    print(f"Using {count} frames ({count / fps:.2f} s).")
-    print(f"Rolling average: {rolling} frame(s). Playback speed: {speed:g}x.")
-
     print("Analyzing fluorescence contrast...")
     low, high = _contrast(files, count)
     print(f"Display range: {low:.1f} to {high:.1f}.")
@@ -74,12 +61,10 @@ def process(files: list[Path], duration: float, output: Path, rolling: int,
         out = 0
         for i, raw in enumerate(pages(files, count)):
             current = _denoise(raw, history).astype(np.float32)
-            # Write every output time reached by this source frame.
             while out < video_frames and positions[out] <= i:
                 if previous is None:
                     write(current)
                 else:
-                    # Blend adjacent frames at fractional positions.
                     weight = positions[out] - (i - 1)
                     write(previous + weight * (current - previous))
                 out += 1
@@ -90,6 +75,29 @@ def process(files: list[Path], duration: float, output: Path, rolling: int,
     finally:
         progress.close()
         writer.close()
+    return mp4_path
+
+
+def process(files: list[Path], duration: float, output: Path, rolling: int,
+            speed: float, gpu: str, patch: int, srd_root: Path,
+            model: Path) -> tuple[Path, float, int]:
+    """Read, denoise, resample, and encode the selected recording interval."""
+    print(f"Found {len(files)} Ch2 TIFF file(s).")
+    print("Reading acquisition timing and stack sizes...")
+    fps = frame_rate(files)
+    available = sum(frame_counts(files))
+    # Cover the duration without exceeding the available recording.
+    count = min(math.ceil(duration * fps), available)
+    if count < 1:
+        raise ValueError("The input contains no frames")
+
+    output.mkdir(parents=True, exist_ok=True)
+    print(f"Source: {fps:.4f} fps, {available} available frames.")
+    print(f"Using {count} frames ({count / fps:.2f} s).")
+    print(f"Rolling average: {rolling} frame(s). Playback speed: {speed:g}x.")
+
+    with denoised_stack(files, count, output, gpu, patch, srd_root, model) as denoised:
+        mp4_path = _render([denoised], count, fps, output, rolling, speed)
 
     print(f"Finished: {mp4_path.resolve()}")
     return mp4_path, fps, count
