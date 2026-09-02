@@ -439,13 +439,15 @@ end
     end
 
     function updatePressTiming(trialType, count)
-        % Show press 2 timing relative to perfect timing and reward profile.
+        % Show press 2 timing from delay onset with the reward profile.
         if trialType == 1
             ax = BpodSystem.GUIHandles.ShortTimingAxes;
             plotTitle = 'Short press 2 timing';
+            perfectTiming = S.GUI.ShortDelay_s;
         else
             ax = BpodSystem.GUIHandles.LongTimingAxes;
             plotTitle = 'Long press 2 timing';
+            perfectTiming = S.GUI.LongDelay_s;
         end
         cla(ax);
         hold(ax, 'on');
@@ -468,14 +470,14 @@ end
                 else
                     trialDelay = trialSettings.GUI.LongDelay_s;
                 end
-                timing = pressTime - trialDelay;
+                timing = pressTime;
                 timingCount = timingCount + 1;
                 timingValues(timingCount) = timing;
                 if isfield(BpodSystem.Data, 'AssistTrial') && numel(BpodSystem.Data.AssistTrial) >= trial && BpodSystem.Data.AssistTrial(trial)
                     timingCategories(timingCount) = 4;
-                elseif timing < -trialSettings.GUI.RewardWindowLeft_s
+                elseif timing - trialDelay < -trialSettings.GUI.RewardWindowLeft_s
                     timingCategories(timingCount) = 2;
-                elseif timing > rewardMaximumWindow(trialSettings) + trialSettings.GUI.RewardWindowRight_s
+                elseif timing - trialDelay > rewardMaximumWindow(trialSettings) + trialSettings.GUI.RewardWindowRight_s
                     timingCategories(timingCount) = 3;
                 else
                     timingCategories(timingCount) = 1;
@@ -488,7 +490,7 @@ end
         earlyTimes = timingValues(timingCategories == 2);
         lateTimes = timingValues(timingCategories == 3);
         assistTimes = timingValues(timingCategories == 4);
-        timeLimits = [-1 4];
+        timeLimits = [0 4];
         edges = linspace(timeLimits(1), timeLimits(2), 101);
         rewardCounts = histcounts(rewardTimes, edges);
         earlyCounts = histcounts(earlyTimes, edges);
@@ -503,14 +505,15 @@ end
             timingBars(i).FaceColor = timingColors(i, :);
         end
         peak = max([1; sum(countMatrix, 2)]);
-        plot(ax, [-S.GUI.RewardWindowLeft_s 0 S.GUI.RewardMaximumWindow_s S.GUI.RewardMaximumWindow_s + S.GUI.RewardWindowRight_s], [0 peak peak 0], '-', 'Color', [0.2 0.2 0.2], 'LineWidth', 1.8);
-        xline(ax, 0, ':', 'Perfect', 'Color', [0.15 0.15 0.15], 'LineWidth', 1.2, 'LabelVerticalAlignment', 'top', 'FontSize', 8);
+        rewardProfileTimes = perfectTiming + [-S.GUI.RewardWindowLeft_s 0 S.GUI.RewardMaximumWindow_s S.GUI.RewardMaximumWindow_s + S.GUI.RewardWindowRight_s];
+        plot(ax, rewardProfileTimes, [0 peak peak 0], '-', 'Color', [0.2 0.2 0.2], 'LineWidth', 1.8);
+        xline(ax, perfectTiming, ':', 'Perfect', 'Color', [0.15 0.15 0.15], 'LineWidth', 1.2, 'LabelVerticalAlignment', 'top', 'FontSize', 8);
         xlim(ax, timeLimits);
         ylim(ax, [0 peak * 1.15]);
         setTimeAxis(ax, timeLimits);
         yticks(ax, unique(round(linspace(0, peak, 3))));
         set(ax, 'YMinorTick', 'off');
-        xlabel(ax, 'Time from perfect (s)');
+        xlabel(ax, 'Time from delay onset (s)');
         ylabel(ax, 'Count');
         title(ax, plotTitle, 'FontSize', 9, 'FontWeight', 'normal');
         if isempty(rewardTimes) && isempty(earlyTimes) && isempty(lateTimes) && isempty(assistTimes)

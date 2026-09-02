@@ -65,10 +65,12 @@ Opto trials are saved as a `4 x nTrials` matrix, with rows for sensory cue 1, de
 
 Reward amount is computed in `SoftCodeHandler_Protocol` from the press 2 time:
 
-- zero at `perfect timing - RewardWindowLeft_s`
-- maximum at perfect timing
+- zero at `delay - RewardWindowLeft_s`
+- maximum at the perfect timing (`delay`)
 - maximum through `RewardMaximumWindow_s`
 - linearly decreases to zero over `RewardWindowRight_s`
+
+Press 2 time is measured from delay onset. The online short and long timing histograms therefore start at `0 s`; their perfect-timing lines are drawn at `ShortDelay_s` and `LongDelay_s`, respectively. The displayed reward shape uses the same coordinate system and is drawn around each delay value.
 
 The protocol divides `TotalRewardDuration_s` into exactly 10 hard-coded,
 identical square-wave cycles and assigns one tenth of the requested water to
@@ -180,5 +182,7 @@ During trials, the display stays gray with the patch dark except while a cue fra
 ## Plot Notes
 
 The online plot uses a two-column canvas: the left side shows trial type, opto period, probe type, delay, and rotary encoder plots; the right side shows outcome fractions with a legend, press timing, state timing, and events. Outcome-related plots share one color set. Opto, probe, delay, and event plots use neutral gray or black marks. The rotary encoder position trace is black, while its threshold and event markers use colored annotations.
+
+The press timing x-axis starts at delay onset (`0 s`). The perfect-timing line is located at the applicable short or long delay, and the reward profile is drawn around that line using `RewardWindowLeft_s`, `RewardMaximumWindow_s`, and `RewardWindowRight_s`.
 
 The event plot uses one row per signal: `BNC 1`, `BNC 2`, `LED 1`, and `Port 2 lick`. Filled bars mark logical 1 or detected lick pulses; blank space marks 0.

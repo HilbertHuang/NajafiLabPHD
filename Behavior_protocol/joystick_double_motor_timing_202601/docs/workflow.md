@@ -137,7 +137,7 @@ The protocol calls `ProtocolPlot('init', ...)`.
 The plot window shows:
 
 - Trial type raster, opto period raster, probe type raster, delay values, and encoder trace in the left column.
-- Press 2 timing histograms.
+- Press 2 timing histograms whose x-axes start at delay onset (`0 s`), with the perfect-timing line and reward profile positioned at the applicable short or long delay.
 - Completed outcome fractions, all outcome fractions, and outcome legend across the top of the right column.
 - State timing.
 - BNC, LED, and lick events.

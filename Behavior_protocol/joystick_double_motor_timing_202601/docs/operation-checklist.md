@@ -33,7 +33,7 @@ Watch these plots:
 - Trial type raster.
 - Opto raster.
 - Probe raster.
-- Press 2 timing histograms.
+- Press 2 timing histograms: confirm `0 s` is delay onset, the perfect line is at the short/long delay, and the reward profile surrounds that line.
 - Outcome fractions.
 - Encoder trace.
 - State timing.

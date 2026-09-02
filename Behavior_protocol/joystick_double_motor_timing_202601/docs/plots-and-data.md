@@ -74,15 +74,24 @@ One is for short trials.
 
 One is for long trials.
 
-Each plot shows press 2 time relative to perfect timing.
+Each plot shows press 2 time from delay onset.
+
+The left edge of the x-axis is delay onset (`0 s`).
 
 The x axis is:
 
 ```text
-press 2 time - target delay
+press 2 time from delay onset
 ```
 
 The histogram bars use the same outcome colors as the outcome rasters and fractions.
+
+The perfect timing marker is drawn at `ShortDelay_s` for short trials and `LongDelay_s` for long trials. The reward profile uses the same delay-onset coordinate system:
+
+- It starts at zero reward at `delay - RewardWindowLeft_s`.
+- It rises to maximum reward at `delay`.
+- It stays at maximum reward through `delay + RewardMaximumWindow_s`.
+- It falls to zero at `delay + RewardMaximumWindow_s + RewardWindowRight_s`.
 
 The reward window profile and perfect timing marker use neutral gray or black.
 
